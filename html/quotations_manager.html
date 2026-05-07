@@ -1,0 +1,1433 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>语录管理系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/simplemde@1.11.2/dist/simplemde.min.css" rel="stylesheet">
+    <style>
+        /* 全局样式 - Google Keep风格 */
+        body {
+            background: #f8f9fa;
+            font-family: 'Roboto', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            padding-bottom: 40px;
+        }
+
+        .container {
+            max-width: 1200px;
+        }
+
+        /* 卡片通用样式 - Google Keep风格 */
+        .card {
+            border: none;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+            margin-bottom: 25px;
+            border-radius: 8px;
+            background: white;
+            transition: all 0.2s ease;
+        }
+
+        .card:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        /* 页面标题 - Google Keep风格 */
+        h3 {
+            color: #202124;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+
+        h3 .badge {
+            background: #e8eaed !important;
+            color: #5f6368 !important;
+            border: none;
+            font-size: 0.7rem !important;
+            padding: 6px 12px;
+            font-weight: 500;
+        }
+
+        /* 主要操作卡片 - Google Keep风格 */
+        .main-action-card {
+            background: #4285f4;
+            color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(66, 133, 244, 0.2);
+            position: relative;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(-10%, -10%); }
+        }
+
+        /* 语录容器列表布局 */
+        #quotationsContainer {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        /* 语录块样式 - Google Keep风格 */
+        .quotation-block {
+            position: relative;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+            padding: 16px;
+            min-height: 130px;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.2s ease;
+            word-wrap: break-word;
+            border: 1px solid #f0f0f0;
+        }
+
+        .quotation-block:hover {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .quotation-block-header {
+            margin-bottom: 12px;
+        }
+
+        .quotation-block-title {
+            font-weight: 500;
+            color: #202124;
+            font-size: 1rem;
+            margin: 0 0 4px 0;
+            line-height: 1.4;
+        }
+
+        .quotation-block-date {
+            font-size: 0.75rem;
+            color: #80868b;
+            margin-bottom: 8px;
+            font-weight: 400;
+        }
+
+        .preview-content {
+            color: #3c4043;
+            line-height: 1.5;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+        }
+
+        .preview-content p {
+            margin: 0 0 8px 0;
+        }
+
+        .preview-content p:last-child {
+            margin-bottom: 0;
+        }
+
+        .quotation-block-actions {
+            display: flex;
+            gap: 4px;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .quotation-block:hover .quotation-block-actions {
+            opacity: 1;
+        }
+
+        .block-btn {
+            padding: 4px 6px;
+            border: none;
+            background: transparent;
+            color: #5f6368;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .block-btn:hover {
+            background: #f1f3f4;
+            color: #202124;
+        }
+
+        .block-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .block-btn svg {
+            width: 16px;
+            height: 16px;
+        }
+        
+        /* 右键菜单项样式 */
+        #contextMenu div:hover {
+            background-color: #f1f3f4;
+        }
+
+        /* 编辑器样式 - Google Keep风格 */
+        .editor-container {
+            background: white;
+            border-radius: 8px;
+            padding: 10px;
+        }
+
+        .editor-container .form-control {
+            border: none;
+            border-bottom: 1px solid #e0e0e0;
+            border-radius: 0;
+            padding: 8px 0;
+            font-size: 0.9rem;
+            background: transparent;
+            box-shadow: none;
+        }
+
+        .editor-container .form-control:focus {
+            border-color: #4285f4;
+            box-shadow: none;
+        }
+
+        .editor-container .form-control::placeholder {
+            color: #9e9e9e;
+        }
+
+        .editor-actions {
+            margin-top: 12px;
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+
+        .editor-actions .btn {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            border-radius: 4px;
+            border: none;
+            font-weight: 500;
+        }
+
+        .editor-actions .btn-primary {
+            background-color: #4285f4;
+        }
+
+        .editor-actions .btn-secondary {
+            background-color: #f1f3f4;
+            color: #202124;
+        }
+
+        /* 辅助按钮样式 */
+        .btn-secondary-action {
+            height: 100%;
+            min-height: 45px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-weight: 500;
+            font-size: 0.85rem;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+        }
+
+        .btn-secondary-action:hover {
+            box-shadow: 0 2px 5px rgba(0,0,0,0.18);
+        }
+
+        /* 网格布局辅助类 */
+        .grid-cols-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        /* 响应式优化 */
+        @media (max-width: 768px) {
+            .main-val {
+                font-size: 2rem;
+            }
+
+            .btn-action {
+                min-height: 70px;
+                font-size: 0.9rem;
+            }
+
+            h3 {
+                font-size: 1.5rem;
+            }
+
+            /* 移动端列表布局优化 */
+            #quotationsContainer {
+                gap: 12px;
+            }
+        }
+
+        /* 拖拽排序样式 */
+        .sortable-ghost {
+            opacity: 0.6;
+            background: #f8f9fa;
+            border: 2px dashed #dadce0;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 拖拽过程中的块样式 */
+        .sortable-chosen {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transform: scale(1.02);
+        }
+
+        /* 拖拽时的动画 */
+        .sortable-drag {
+            opacity: 0.8;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-4">
+        <h3 class="text-center mb-4 fw-bold">📝 语录管理系统 <span class="badge bg-secondary fs-6">v1.0</span></h3>
+
+        <div class="card main-action-card text-center p-4">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span>当前语录数量</span>
+            </div>
+            <div class="main-val" id="quotationsCount">0</div>
+            <div class="mt-2 text-white-50 small">管理您的语录，支持实时编辑和导入导出</div>
+        </div>
+
+        <div class="row g-2 mb-4">
+            <div class="col-6 col-md-3">
+                <button class="btn btn-primary w-100 btn-action" onclick="addNewQuotation()">
+                    <span>➕ 添加语录</span>
+                    <span style="font-size:0.7rem; font-weight:normal; opacity:0.8;">创建新语录</span>
+                </button>
+            </div>
+            <div class="col-6 col-md-3">
+                <button class="btn btn-success w-100 btn-action" onclick="exportToMarkdown()">
+                    <span>📥 导出MD</span>
+                    <span style="font-size:0.7rem; font-weight:normal; opacity:0.8;">保存为文件</span>
+                </button>
+            </div>
+            <div class="col-6 col-md-3">
+                <button class="btn btn-danger w-100 btn-action" onclick="document.getElementById('importFile').click()">
+                    <span>📤 导入MD</span>
+                    <span style="font-size:0.7rem; font-weight:normal; opacity:0.8;">从文件导入</span>
+                </button>
+                <input type="file" id="importFile" accept=".md,.txt" style="display: none;" onchange="importFromMarkdown(event)">
+            </div>
+            <div class="col-6 col-md-3">
+                <button class="btn btn-warning w-100 btn-action text-dark" onclick="clearAllQuotations()">
+                    <span>🗑️ 清空全部</span>
+                    <span style="font-size:0.7rem; font-weight:normal; opacity:0.8;">谨慎操作</span>
+                </button>
+            </div>
+            <!-- 用于双击文件复制功能的隐藏文件输入 -->
+            <input type="file" id="doubleClickFileInput" multiple accept="*" style="display: none;" onchange="handleDoubleClickFile(event)">
+        </div>
+
+        <div class="card">
+            <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center">
+                <span>📚 语录列表</span>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-sm btn-info btn-secondary-action" onclick="sortQuotations('date')">
+                        <span>📅 按日期排序</span>
+                    </button>
+                    <button class="btn btn-sm btn-secondary btn-secondary-action" onclick="sortQuotations('title')">
+                        <span>🔤 按标题排序</span>
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info py-2 small mb-3">
+                    <strong>使用提示：</strong> 点击"编辑"按钮可修改语录内容，支持实时Markdown预览。语录块可以拖拽排序，也可以使用上下移动按钮调整位置。
+                    <br>
+                    <strong>文件操作：</strong> 您可以将文件拖拽到页面上，或点击任意位置后按Ctrl+O选择文件，系统将自动读取并复制文件内容到剪贴板。
+                </div>
+                <div id="quotationsContainer">
+                    <!-- 语录块将在这里动态生成 -->
+                    <div class="text-center text-muted py-5" id="emptyPlaceholder">
+                        <p>暂无语录，请点击"添加语录"按钮创建第一条语录</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 操作反馈提示 -->
+    <div id="feedbackToast" class="position-fixed top-0 end-0 m-3 p-3 bg-white rounded shadow-lg z-50" style="display: none; max-width: 350px;">
+        <div class="d-flex align-items-center">
+            <div id="feedbackIcon" class="me-3 text-success">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+                </svg>
+            </div>
+            <div id="feedbackMessage" class="flex-grow-1"></div>
+            <button type="button" class="btn-close" onclick="hideFeedback()"></button>
+        </div>
+    </div>
+    
+    <!-- 自定义右键菜单 -->
+    <div id="contextMenu" class="position-fixed bg-white rounded shadow-lg z-50" style="display: none; min-width: 150px; border: 1px solid #e0e0e0;">
+        <div class="p-1">
+            <div id="copyQuotationMenu" class="p-2 hover:bg-gray-100 rounded cursor-pointer" style="transition: background-color 0.1s ease;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="d-inline-block me-2">
+                    <path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"/>
+                    <path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z"/>
+                </svg>
+                复制语块内容
+            </div>
+        </div>
+    </div>
+    
+    <footer class="container py-4 text-center text-white">
+        <p class="mb-0">语录管理系统 v1.0 • 支持实时Markdown编辑 • 本地数据存储 • 双击文件复制</p>
+        <small class="text-white-75">数据保存在浏览器本地，清空浏览器数据将导致数据丢失，请定期导出备份</small>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/simplemde@1.11.2/dist/simplemde.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked@4.0.0/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.14.0/Sortable.min.js"></script>
+    <script>
+        // 语录数据管理
+        let quotations = [];
+        let editors = {}; // 存储编辑器实例
+        let previewTimers = {}; // 用于实时预览的防抖定时器
+        
+        // 防抖函数
+        function debounce(func, wait) {
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(this.timeout);
+                    func(...args);
+                };
+                clearTimeout(this.timeout);
+                this.timeout = setTimeout(later, wait);
+            };
+        }
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('语录管理系统加载中...');
+            
+            // 从localStorage加载数据
+            loadQuotations();
+            renderQuotations();
+            updateQuotationsCount();
+            
+            // 添加事件委托，处理语录块的所有操作
+            const quotationsContainer = document.getElementById('quotationsContainer');
+            if (quotationsContainer) {
+                // 单击事件处理
+                quotationsContainer.addEventListener('click', function(e) {
+                    const target = e.target;
+                    const quotationBlock = target.closest('.quotation-block');
+                    
+                    if (!quotationBlock) return;
+                    
+                    const id = parseFloat(quotationBlock.getAttribute('data-id'));
+                    const index = parseInt(quotationBlock.getAttribute('data-index'));
+                    
+                    // 处理编辑按钮点击
+                    if (target.classList.contains('btn-edit') || target.closest('.btn-edit')) {
+                        e.preventDefault();
+                        editQuotation(id);
+                    }
+                    // 处理删除按钮点击
+                    else if (target.classList.contains('btn-delete') || target.closest('.btn-delete')) {
+                        e.preventDefault();
+                        deleteQuotation(id);
+                    }
+                    // 处理上移按钮点击
+                    else if (target.classList.contains('btn-move-up') || target.closest('.btn-move-up')) {
+                        e.preventDefault();
+                        moveQuotation(index, 'up');
+                    }
+                    // 处理下移按钮点击
+                    else if (target.classList.contains('btn-move-down') || target.closest('.btn-move-down')) {
+                        e.preventDefault();
+                        moveQuotation(index, 'down');
+                    }
+                });
+                
+                // 双击事件处理 - 双击语录块进入编辑模式
+                quotationsContainer.addEventListener('dblclick', function(e) {
+                    const target = e.target;
+                    const quotationBlock = target.closest('.quotation-block');
+                    
+                    if (!quotationBlock) return;
+                    
+                    // 检查双击是否发生在按钮上，如果是则不处理
+                    if (target.closest('button') || target.closest('.btn')) {
+                        return;
+                    }
+                    
+                    const id = parseFloat(quotationBlock.getAttribute('data-id'));
+                    editQuotation(id);
+                });
+                
+                // 右键菜单事件处理
+                quotationsContainer.addEventListener('contextmenu', function(e) {
+                    const target = e.target;
+                    const quotationBlock = target.closest('.quotation-block');
+                    
+                    if (quotationBlock) {
+                        e.preventDefault();
+                        
+                        // 显示自定义右键菜单
+                        const contextMenu = document.getElementById('contextMenu');
+                        if (contextMenu) {
+                            // 定位菜单
+                            contextMenu.style.left = e.clientX + 'px';
+                            contextMenu.style.top = e.clientY + 'px';
+                            contextMenu.style.display = 'block';
+                            
+                            // 存储当前选中的语块ID
+                            contextMenu.dataset.quotationId = quotationBlock.getAttribute('data-id');
+                        }
+                    }
+                });
+            }
+            
+            // 点击页面其他地方隐藏右键菜单
+            document.addEventListener('click', function(e) {
+                const contextMenu = document.getElementById('contextMenu');
+                if (contextMenu && contextMenu.contains(e.target)) {
+                    // 点击菜单内部，不隐藏
+                    return;
+                }
+                contextMenu.style.display = 'none';
+            });
+            
+            // 点击复制语块内容菜单项
+            const copyMenuItem = document.getElementById('copyQuotationMenu');
+            if (copyMenuItem) {
+                copyMenuItem.addEventListener('click', function() {
+                    const contextMenu = document.getElementById('contextMenu');
+                    const quotationId = contextMenu.dataset.quotationId;
+                    
+                    if (quotationId) {
+                        copyQuotationContent(parseFloat(quotationId));
+                    }
+                    
+                    // 隐藏菜单
+                    contextMenu.style.display = 'none';
+                });
+            }
+            
+            // 添加文件拖拽事件
+            setupDragAndDrop();
+            
+            // 添加键盘快捷键
+            setupKeyboardShortcuts();
+            
+            console.log('语录管理系统加载完成');
+        });
+        
+        // 设置文件拖拽功能
+        function setupDragAndDrop() {
+            const body = document.body;
+            
+            body.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                body.classList.add('drag-over');
+            });
+            
+            body.addEventListener('dragleave', function(e) {
+                e.preventDefault();
+                if (!e.currentTarget.contains(e.relatedTarget)) {
+                    body.classList.remove('drag-over');
+                }
+            });
+            
+            body.addEventListener('drop', function(e) {
+                e.preventDefault();
+                body.classList.remove('drag-over');
+                
+                const files = e.dataTransfer.files;
+                if (files && files.length > 0) {
+                    // 处理所有拖放的文件
+                    Array.from(files).forEach(file => {
+                        readFileAndCopy(file);
+                    });
+                }
+            });
+            
+            // 添加拖拽时的样式
+            const style = document.createElement('style');
+            style.textContent = `
+                body.drag-over {
+                    border: 2px dashed #4285f4;
+                    background-color: rgba(66, 133, 244, 0.05);
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        // 设置键盘快捷键
+        function setupKeyboardShortcuts() {
+            document.addEventListener('keydown', function(e) {
+                // Ctrl+O 打开文件选择
+                if ((e.ctrlKey || e.metaKey) && e.key === 'o') {
+                    e.preventDefault();
+                    document.getElementById('doubleClickFileInput').click();
+                }
+            });
+        }
+
+        // 语录对象构造函数
+        function Quotation(title, content, date) {
+            this.id = Date.now() + Math.random(); // 生成唯一ID
+            this.title = title || '新语录';
+            this.content = content || '';
+            this.date = date || new Date().toISOString();
+            this.createdAt = this.date;
+        }
+
+        // 加载语录数据
+        function loadQuotations() {
+            const saved = localStorage.getItem('quotations_data');
+            if (saved) {
+                try {
+                    const parsedData = JSON.parse(saved);
+                    
+                    // 验证数据格式
+                    if (Array.isArray(parsedData)) {
+                        // 验证每个语录对象的格式
+                        quotations = parsedData.filter(item => {
+                            const isValid = item && typeof item === 'object' && 
+                                         typeof item.id === 'number' &&
+                                         typeof item.title === 'string' &&
+                                         typeof item.content === 'string' &&
+                                         typeof item.date === 'string';
+                            
+                            if (!isValid) {
+                                console.error('无效的语录数据:', item);
+                            }
+                            return isValid;
+                        });
+                        
+                        console.log('语录数据加载成功，共', quotations.length, '条有效语录');
+                    } else {
+                        console.error('语录数据格式错误，期望数组:', parsedData);
+                        quotations = [];
+                    }
+                } catch (e) {
+                    console.error('语录数据解析失败:', e);
+                    quotations = [];
+                    alert('语录数据加载失败，已重置为默认状态');
+                }
+            } else {
+                console.log('未找到保存的语录数据，使用默认空数组');
+                quotations = [];
+            }
+        }
+
+        // 保存语录数据
+        function saveQuotations() {
+            try {
+                // 验证数据格式
+                if (!Array.isArray(quotations)) {
+                    console.error('语录数据格式错误:', quotations);
+                    return;
+                }
+                
+                localStorage.setItem('quotations_data', JSON.stringify(quotations));
+                console.log('语录数据保存成功，共保存', quotations.length, '条语录');
+            } catch (e) {
+                console.error('语录数据保存失败:', e);
+                // 更友好的错误提示
+                if (e.name === 'QuotaExceededError') {
+                    alert('数据保存失败：本地存储空间不足，请删除一些语录或导出后清空数据');
+                } else {
+                    alert('数据保存失败，请检查浏览器存储设置');
+                }
+            }
+        }
+
+        // 更新语录计数
+        function updateQuotationsCount() {
+            const countElement = document.getElementById('quotationsCount');
+            if (countElement) {
+                countElement.textContent = quotations.length;
+            }
+        }
+
+        // 渲染所有语录
+        function renderQuotations() {
+            const container = document.getElementById('quotationsContainer');
+            
+            if (quotations.length === 0) {
+                container.innerHTML = '<div class="text-center text-muted py-5" id="emptyPlaceholder"><p>暂无语录，请点击"添加语录"按钮创建第一条语录</p></div>';
+                return;
+            }
+            
+            container.innerHTML = '';
+            
+            quotations.forEach((quotation, index) => {
+                const blockElement = createQuotationBlock(quotation, index);
+                container.appendChild(blockElement);
+            });
+            
+            // 初始化拖拽排序
+            initDragAndDrop();
+        }
+
+        // 创建单个语录块
+        function createQuotationBlock(quotation, index) {
+            const block = document.createElement('div');
+            block.className = 'quotation-block';
+            block.setAttribute('data-id', quotation.id);
+            block.setAttribute('data-index', index);
+            
+            const date = new Date(quotation.date);
+            const dateStr = date.toLocaleDateString('zh-CN') + ' ' + date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+            
+            block.innerHTML = `
+                <div class="quotation-block-header d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="quotation-block-title">${escapeHtml(quotation.title)}</div>
+                        <div class="quotation-block-date text-muted small">${dateStr}</div>
+                    </div>
+                    <div class="quotation-block-actions">
+                        <button class="btn btn-sm block-btn btn-edit" title="编辑">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"/>
+                                <path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z"/>
+                            </svg>
+                        </button>
+                        <button class="btn btn-sm block-btn btn-move-up" ${index === 0 ? 'disabled' : ''} title="上移">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M8 15a.5.5 0 0 1-.5-.5V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V14.5a.5.5 0 0 1-.5.5z"/>
+                            </svg>
+                        </button>
+                        <button class="btn btn-sm block-btn btn-move-down" ${index === quotations.length - 1 ? 'disabled' : ''} title="下移">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M8 1a.5.5 0 0 1 .5.5v11.793l2.146-2.147a.5.5 0 0 1 .708.708l-3 3a.5.5 0 0 1-.708 0l-3-3a.5.5 0 0 1 .708-.708L7.5 13.293V1.5A.5.5 0 0 1 8 1z"/>
+                            </svg>
+                        </button>
+                        <button class="btn btn-sm block-btn btn-delete" title="删除">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
+                                <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="preview-content" id="preview-${quotation.id}">
+                    ${quotation.content ? marked.parse(escapeHtml(quotation.content)) : '<p class="text-muted">无内容</p>'}
+                </div>
+                <div class="editor-container" id="editor-container-${quotation.id}" style="display: none;">
+                    <div class="mb-3">
+                        <input type="text" class="form-control quotation-title-input" value="${escapeHtml(quotation.title)}" placeholder="输入语录标题">
+                    </div>
+                    <div class="mb-3">
+                        <textarea class="form-control quotation-content-input" rows="6" placeholder="输入Markdown格式的语录内容">${escapeHtml(quotation.content)}</textarea>
+                    </div>
+                    <div class="editor-actions">
+                        <button class="btn btn-secondary" onclick="cancelEditQuotation(${quotation.id})">取消</button>
+                        <button class="btn btn-primary" onclick="saveQuotation(${quotation.id})">保存</button>
+                    </div>
+                </div>
+            `;
+            
+            return block;
+        }
+
+        // 转义HTML字符以防止XSS
+        function escapeHtml(text) {
+            if (typeof text !== 'string') return '';
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
+        // 添加新语录
+        function addNewQuotation() {
+            try {
+                const newQuotation = new Quotation();
+                
+                // 验证新语录对象
+                if (!newQuotation || typeof newQuotation !== 'object' || !newQuotation.id) {
+                    console.error('创建新语录失败:', newQuotation);
+                    alert('创建新语录失败，请重试');
+                    return;
+                }
+                
+                quotations.unshift(newQuotation); // 添加到开头
+                saveQuotations();
+                renderQuotations();
+                updateQuotationsCount();
+                
+                // 自动编辑新添加的语录
+                setTimeout(() => {
+                    editQuotation(newQuotation.id);
+                }, 100);
+            } catch (e) {
+                console.error('添加新语录失败:', e);
+                alert('添加新语录失败，请重试');
+            }
+        }
+
+        // 编辑语录
+        function editQuotation(id) {
+            const quotation = quotations.find(q => q.id === id);
+            if (!quotation) return;
+            
+            // 隐藏所有编辑器并显示预览
+            document.querySelectorAll('.editor-container').forEach(el => {
+                el.style.display = 'none';
+            });
+            document.querySelectorAll('.preview-content').forEach(el => {
+                el.style.display = 'block';
+            });
+            
+            // 显示当前语录的编辑器并隐藏预览
+            const editorContainer = document.getElementById(`editor-container-${id}`);
+            const previewContainer = document.getElementById(`preview-${id}`);
+            
+            if (editorContainer && previewContainer) {
+                editorContainer.style.display = 'block';
+                previewContainer.style.display = 'none';
+                
+                // 为编辑器内容变化添加实时预览（确保不会重复添加事件监听器）
+                const contentInput = editorContainer.querySelector('.quotation-content-input');
+                const titleInput = editorContainer.querySelector('.quotation-title-input');
+                
+                // 移除现有的事件监听器，避免重复添加
+                contentInput.removeEventListener('input', contentInput.onInputHandler);
+                titleInput.removeEventListener('input', titleInput.onInputHandler);
+                
+                // 创建新的事件处理函数并保存引用
+                contentInput.onInputHandler = () => updatePreview(id);
+                titleInput.onInputHandler = () => updatePreview(id);
+                
+                // 添加新的事件监听器
+                contentInput.addEventListener('input', contentInput.onInputHandler);
+                titleInput.addEventListener('input', titleInput.onInputHandler);
+                
+                // 设置焦点到内容输入框
+                contentInput.focus();
+            }
+        }
+
+        // 实时更新预览
+        function updatePreview(id) {
+            // 清除之前的定时器
+            if (previewTimers[id]) {
+                clearTimeout(previewTimers[id]);
+            }
+            
+            // 设置新的定时器，延迟执行预览更新
+            previewTimers[id] = setTimeout(() => {
+                const editorContainer = document.getElementById(`editor-container-${id}`);
+                if (!editorContainer) return;
+                
+                const contentInput = editorContainer.querySelector('.quotation-content-input');
+                const titleInput = editorContainer.querySelector('.quotation-title-input');
+                const previewContainer = document.getElementById(`preview-${id}`);
+                
+                if (contentInput && previewContainer) {
+                    const content = contentInput.value;
+                    const title = titleInput ? titleInput.value : '';
+                    
+                    // 更新预览内容
+                    previewContainer.innerHTML = marked.parse(escapeHtml(content));
+                    
+                    // 更新标题
+                    const titleElement = editorContainer.closest('.quotation-block').querySelector('.quotation-block-title');
+                    if (titleElement) {
+                        titleElement.textContent = title || '新语录';
+                    }
+                }
+            }, 300); // 300毫秒延迟，可根据需要调整
+        }
+
+        // 保存语录
+        function saveQuotation(id) {
+            try {
+                const editorContainer = document.getElementById(`editor-container-${id}`);
+                if (!editorContainer) {
+                    console.error('编辑器容器不存在:', id);
+                    return;
+                }
+                
+                const contentInput = editorContainer.querySelector('.quotation-content-input');
+                const titleInput = editorContainer.querySelector('.quotation-title-input');
+                
+                if (!contentInput || !titleInput) {
+                    console.error('编辑器输入框不存在:', id);
+                    return;
+                }
+                
+                const updatedContent = contentInput.value;
+                const updatedTitle = titleInput.value || '未命名语录';
+                
+                // 查找并更新语录
+                const quotationIndex = quotations.findIndex(q => q.id === id);
+                if (quotationIndex !== -1) {
+                    // 更新语录数据
+                    quotations[quotationIndex].content = updatedContent;
+                    quotations[quotationIndex].title = updatedTitle;
+                    quotations[quotationIndex].date = new Date().toISOString();
+                    
+                    // 保存数据
+                    saveQuotations();
+                    
+                    // 只更新当前语录块，而不是重新渲染整个列表
+                    updateSingleQuotationBlock(id);
+                } else {
+                    console.error('未找到要保存的语录:', id);
+                    alert('保存失败：未找到指定语录');
+                }
+            } catch (e) {
+                console.error('保存语录失败:', e);
+                alert('保存失败，请重试');
+            }
+        }
+        
+        // 更新单个语录块
+        function updateSingleQuotationBlock(id) {
+            try {
+                // 验证ID
+                if (typeof id !== 'number') {
+                    console.error('无效的语录ID:', id);
+                    return;
+                }
+                
+                // 查找语录
+                const quotation = quotations.find(q => q.id === id);
+                if (!quotation) {
+                    console.error('未找到指定语录:', id);
+                    return;
+                }
+                
+                // 查找DOM元素
+                const blockElement = document.querySelector(`[data-id="${id}"]`);
+                if (!blockElement) {
+                    console.error('未找到语录对应的DOM元素:', id);
+                    return;
+                }
+                
+                // 查找索引
+                const quotationIndex = quotations.findIndex(q => q.id === id);
+                if (quotationIndex === -1) {
+                    console.error('未找到语录在数组中的索引:', id);
+                    return;
+                }
+                
+                // 创建新的块元素
+                const newBlockElement = createQuotationBlock(quotation, quotationIndex);
+                if (!newBlockElement) {
+                    console.error('创建新语录块失败:', id);
+                    return;
+                }
+                
+                // 替换旧的块元素
+                blockElement.parentNode.replaceChild(newBlockElement, blockElement);
+            } catch (e) {
+                console.error('更新语录块失败:', e);
+                // 出错时回退到完整渲染
+                renderQuotations();
+            }
+        }
+
+        // 取消编辑
+        function cancelEditQuotation(id) {
+            const editorContainer = document.getElementById(`editor-container-${id}`);
+            const previewContainer = document.getElementById(`preview-${id}`);
+            
+            if (editorContainer && previewContainer) {
+                // 移除事件监听器
+                const contentInput = editorContainer.querySelector('.quotation-content-input');
+                const titleInput = editorContainer.querySelector('.quotation-title-input');
+                
+                if (contentInput) {
+                    contentInput.removeEventListener('input', contentInput.onInputHandler);
+                }
+                if (titleInput) {
+                    titleInput.removeEventListener('input', titleInput.onInputHandler);
+                }
+                
+                // 隐藏编辑器并显示预览
+                editorContainer.style.display = 'none';
+                previewContainer.style.display = 'block';
+            }
+        }
+
+        // 删除语录
+        function deleteQuotation(id) {
+            if (confirm('确定要删除这条语录吗？此操作不可撤销。')) {
+                quotations = quotations.filter(q => q.id !== id);
+                saveQuotations();
+                renderQuotations();
+                updateQuotationsCount();
+            }
+        }
+
+        // 移动语录位置
+        function moveQuotation(index, direction) {
+            try {
+                // 验证索引和方向
+                if (typeof index !== 'number' || isNaN(index) || index < 0 || index >= quotations.length) {
+                    console.error('无效的语录索引:', index);
+                    return;
+                }
+                
+                let otherIndex;
+                if (direction === 'up' && index > 0) {
+                    // 向上移动
+                    otherIndex = index - 1;
+                    [quotations[otherIndex], quotations[index]] = [quotations[index], quotations[otherIndex]];
+                } else if (direction === 'down' && index < quotations.length - 1) {
+                    // 向下移动
+                    otherIndex = index + 1;
+                    [quotations[index], quotations[otherIndex]] = [quotations[otherIndex], quotations[index]];
+                } else {
+                    return; // 无需移动
+                }
+                
+                // 保存数据
+                saveQuotations();
+                
+                // 验证语录对象存在且有有效ID
+                if (quotations[index] && typeof quotations[index].id === 'number' &&
+                    quotations[otherIndex] && typeof quotations[otherIndex].id === 'number') {
+                    // 只更新受影响的两个语录块
+                    updateSingleQuotationBlock(quotations[index].id);
+                    updateSingleQuotationBlock(quotations[otherIndex].id);
+                } else {
+                    console.error('语录对象或ID无效，无法更新DOM');
+                    // 如果更新单个块失败，回退到完整渲染
+                    renderQuotations();
+                }
+            } catch (e) {
+                console.error('移动语录失败:', e);
+                // 出错时回退到完整渲染
+                renderQuotations();
+            }
+        }
+
+        // 按指定方式排序语录
+        function sortQuotations(by) {
+            try {
+                if (by === 'date') {
+                    quotations.sort((a, b) => {
+                        // 确保日期有效
+                        const dateA = new Date(a.date);
+                        const dateB = new Date(b.date);
+                        return (isNaN(dateB.getTime()) ? 0 : dateB.getTime()) - (isNaN(dateA.getTime()) ? 0 : dateA.getTime());
+                    });
+                } else if (by === 'title') {
+                    quotations.sort((a, b) => {
+                        // 确保标题为字符串
+                        const titleA = typeof a.title === 'string' ? a.title : '';
+                        const titleB = typeof b.title === 'string' ? b.title : '';
+                        return titleA.localeCompare(titleB, 'zh-CN');
+                    });
+                }
+                
+                saveQuotations();
+                renderQuotations();
+            } catch (e) {
+                console.error('排序失败:', e);
+                alert('排序失败，请检查数据格式');
+            }
+        }
+
+        // 导出为Markdown文件
+        function exportToMarkdown() {
+            if (quotations.length === 0) {
+                alert('没有语录可以导出！');
+                return;
+            }
+            
+            let markdownContent = '# 语录集\n\n';
+            markdownContent += `导出时间: ${new Date().toLocaleString('zh-CN')}\n\n`;
+            
+            quotations.forEach((quotation, index) => {
+                const date = new Date(quotation.date);
+                const dateStr = date.toLocaleDateString('zh-CN') + ' ' + date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+                
+                markdownContent += `## ${index + 1}. ${quotation.title}\n\n`;
+                markdownContent += `*时间: ${dateStr}*\n\n`;
+                markdownContent += `${quotation.content}
+
+---
+
+`;
+            });
+            
+            // 创建下载链接
+            const blob = new Blob([markdownContent], { type: 'text/markdown;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `语录集_${new Date().toISOString().slice(0, 10)}.md`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // 从Markdown文件导入
+        function importFromMarkdown(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            // 验证文件类型
+            const validExtensions = ['.md', '.txt'];
+            const fileName = file.name.toLowerCase();
+            const isValidType = validExtensions.some(ext => fileName.endsWith(ext));
+            
+            if (!isValidType) {
+                alert('请选择有效的Markdown文件(.md)或文本文件(.txt)');
+                event.target.value = ''; // 清空文件输入
+                return;
+            }
+            
+            // 限制文件大小（10MB）
+            const maxSize = 10 * 1024 * 1024;
+            if (file.size > maxSize) {
+                alert('文件大小超过限制（最大10MB），请选择较小的文件');
+                event.target.value = '';
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const content = e.target.result;
+                    
+                    // 简单解析Markdown内容
+                    const newQuotations = parseMarkdownContent(content);
+                    
+                    if (newQuotations.length > 0) {
+                        if (confirm(`检测到 ${newQuotations.length} 条语录，是否添加到现有语录中？\n（选择"取消"将替换现有所有语录）`)) {
+                            // 添加到现有语录
+                            quotations = quotations.concat(newQuotations);
+                        } else {
+                            // 替换现有语录
+                            quotations = newQuotations;
+                        }
+                        
+                        saveQuotations();
+                        renderQuotations();
+                        updateQuotationsCount();
+                        alert(`成功导入 ${newQuotations.length} 条语录！`);
+                    } else {
+                        alert('未检测到有效的语录内容！');
+                    }
+                } catch (e) {
+                    console.error('导入失败:', e);
+                    alert('文件导入失败，请检查文件格式');
+                } finally {
+                    // 清空文件输入，允许重新选择同一文件
+                    event.target.value = '';
+                }
+            };
+            
+            reader.onerror = function(e) {
+                console.error('文件读取失败:', e);
+                alert('文件读取失败，请重试');
+                event.target.value = '';
+            };
+            
+            reader.readAsText(file);
+        }
+
+        // 解析Markdown内容为语录数组
+        function parseMarkdownContent(content) {
+            const quotations = [];
+            
+            if (!content || typeof content !== 'string') {
+                return quotations;
+            }
+            
+            try {
+                // 使用更灵活的正则表达式解析
+                const headingRegex = /^##\s+(.+)$/gm;
+                let match;
+                
+                // 查找所有二级标题
+                while ((match = headingRegex.exec(content)) !== null) {
+                    const title = match[1].replace(/\d+\.\s*/, '').trim(); // 移除编号并清理
+                    const startIndex = match.index + match[0].length;
+                    let endIndex = content.length;
+                    
+                    // 查找下一个二级标题作为结束位置
+                    const nextHeadingMatch = /^##\s+.+$/gm;
+                    nextHeadingMatch.lastIndex = startIndex;
+                    const nextMatch = nextHeadingMatch.exec(content);
+                    if (nextMatch) {
+                        endIndex = nextMatch.index;
+                    }
+                    
+                    // 提取内容
+                    let contentBlock = content.substring(startIndex, endIndex);
+                    
+                    // 清理内容：移除时间行、分隔线等
+                    contentBlock = contentBlock
+                        .replace(/^\*时间:.*$/gm, '')
+                        .replace(/^---$/gm, '')
+                        .trim();
+                    
+                    // 验证标题和内容
+                    if (title && contentBlock) {
+                        quotations.push(new Quotation(title, contentBlock));
+                    }
+                }
+                
+                // 如果没有找到二级标题，尝试按分隔线分割
+                if (quotations.length === 0) {
+                    const blocks = content.split('---');
+                    for (let i = 0; i < blocks.length; i++) {
+                        const block = blocks[i].trim();
+                        if (block) {
+                            // 尝试提取标题（第一行）
+                            const lines = block.split('\n');
+                            let title = '导入的语录';
+                            let content = block;
+                            
+                            if (lines.length > 0 && lines[0].trim().startsWith('#')) {
+                                title = lines[0].replace(/^#+\s*/, '').trim();
+                                content = lines.slice(1).join('\n').trim();
+                            } else if (lines.length > 0) {
+                                title = lines[0].trim();
+                                content = lines.slice(1).join('\n').trim();
+                            }
+                            
+                            // 验证标题和内容
+                            if (title && content) {
+                                quotations.push(new Quotation(title, content));
+                            }
+                        }
+                    }
+                }
+                
+                // 确保生成的语录对象有效
+                return quotations.filter(quotation => {
+                    return quotation && typeof quotation === 'object' && 
+                           typeof quotation.title === 'string' && 
+                           typeof quotation.content === 'string' &&
+                           quotation.title.trim() && quotation.content.trim();
+                });
+            } catch (e) {
+                console.error('解析Markdown内容失败:', e);
+                return [];
+            }
+        }
+
+        // 处理双击文件事件
+        function handleDoubleClickFile(event) {
+            const files = event.target.files;
+            if (!files || files.length === 0) return;
+            
+            // 处理所有选择的文件
+            Array.from(files).forEach(file => {
+                readFileAndCopy(file);
+            });
+            
+            // 清空文件输入，允许重新选择同一文件
+            event.target.value = '';
+        }
+        
+        // 读取文件内容并复制到剪贴板
+        function readFileAndCopy(file) {
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                try {
+                    const content = e.target.result;
+                    copyToClipboard(content);
+                    showFeedback(`文件 "${file.name}" 内容已复制到剪贴板！`);
+                } catch (error) {
+                    console.error('复制文件内容失败:', error);
+                    showFeedback(`文件 "${file.name}" 复制失败: ${error.message}`, 'error');
+                }
+            };
+            
+            reader.onerror = function(e) {
+                console.error('文件读取失败:', e);
+                showFeedback(`文件 "${file.name}" 读取失败`, 'error');
+            };
+            
+            // 根据文件类型选择读取方式
+            if (file.type.startsWith('text/') || ['.md', '.txt', '.html', '.css', '.js', '.json', '.xml'].includes(getFileExtension(file.name))) {
+                reader.readAsText(file, 'UTF-8');
+            } else {
+                // 对于非文本文件，读取为Data URL
+                reader.readAsDataURL(file);
+            }
+        }
+        
+        // 获取文件扩展名
+        function getFileExtension(filename) {
+            return filename.slice((filename.lastIndexOf('.') - 1 >>> 0) + 2).toLowerCase();
+        }
+        
+        // 复制文本到剪贴板
+        function copyToClipboard(text) {
+            // 优先使用 Clipboard API
+            if (navigator.clipboard && window.isSecureContext) {
+                return navigator.clipboard.writeText(text);
+            } else {
+                // 降级到传统方法
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                
+                // 确保文本区域不在可视区域内
+                textArea.style.position = 'fixed';
+                textArea.style.left = '-999999px';
+                textArea.style.top = '-999999px';
+                document.body.appendChild(textArea);
+                
+                // 选择并复制文本
+                textArea.focus();
+                textArea.select();
+                
+                try {
+                    document.execCommand('copy');
+                } catch (error) {
+                    console.error('传统复制方法失败:', error);
+                    throw error;
+                } finally {
+                    document.body.removeChild(textArea);
+                }
+            }
+        }
+        
+        // 复制语块内容到剪贴板
+        function copyQuotationContent(id) {
+            // 查找指定ID的语块
+            const quotation = quotations.find(q => q.id === id);
+            
+            if (!quotation) {
+                showFeedback('找不到指定的语块', 'error');
+                return;
+            }
+            
+            // 构建要复制的内容
+            let contentToCopy = '';
+            if (quotation.title) {
+                contentToCopy += `${quotation.title}\n\n`;
+            }
+            contentToCopy += quotation.content;
+            
+            try {
+                copyToClipboard(contentToCopy);
+                showFeedback('语块内容已复制到剪贴板！');
+            } catch (error) {
+                console.error('复制语块内容失败:', error);
+                showFeedback('复制语块内容失败: ' + error.message, 'error');
+            }
+        }
+        
+        // 显示操作反馈
+        function showFeedback(message, type = 'success') {
+            const toast = document.getElementById('feedbackToast');
+            const messageElement = document.getElementById('feedbackMessage');
+            const iconElement = document.getElementById('feedbackIcon');
+            
+            if (!toast || !messageElement || !iconElement) return;
+            
+            // 设置消息内容
+            messageElement.textContent = message;
+            
+            // 根据类型设置样式
+            if (type === 'success') {
+                iconElement.className = 'me-3 text-success';
+                toast.className = 'position-fixed top-0 end-0 m-3 p-3 bg-white rounded shadow-lg z-50';
+            } else {
+                iconElement.className = 'me-3 text-danger';
+                toast.className = 'position-fixed top-0 end-0 m-3 p-3 bg-white border-left-4 border-danger rounded shadow-lg z-50';
+            }
+            
+            // 显示反馈
+            toast.style.display = 'block';
+            
+            // 设置自动隐藏
+            setTimeout(hideFeedback, 3000);
+        }
+        
+        // 隐藏操作反馈
+        function hideFeedback() {
+            const toast = document.getElementById('feedbackToast');
+            if (toast) {
+                toast.style.display = 'none';
+            }
+        }
+        
+        // 清空所有语录
+        function clearAllQuotations() {
+            if (confirm('确定要清空所有语录吗？此操作不可撤销！')) {
+                quotations = [];
+                saveQuotations();
+                renderQuotations();
+                updateQuotationsCount();
+                alert('所有语录已清空！');
+            }
+        }
+
+        // 初始化拖拽排序
+        function initDragAndDrop() {
+            const container = document.getElementById('quotationsContainer');
+            if (!container) return;
+            
+            // 销毁已存在的Sortable实例
+            if (container.sortableInstance) {
+                container.sortableInstance.destroy();
+            }
+            
+            container.sortableInstance = new Sortable(container, {
+                animation: 150,
+                ghostClass: 'sortable-ghost',
+                onEnd: function(evt) {
+                    // 拖拽结束时更新数组顺序
+                    const oldIndex = evt.oldIndex;
+                    const newIndex = evt.newIndex;
+                    
+                    if (oldIndex !== newIndex) {
+                        // 重新排序数组
+                        const movedItem = quotations[oldIndex];
+                        quotations.splice(oldIndex, 1);
+                        quotations.splice(newIndex, 0, movedItem);
+                        
+                        saveQuotations();
+                        
+                        // 只更新受影响元素的data-index属性，避免重新渲染整个列表
+                        const quotationBlocks = container.querySelectorAll('.quotation-block');
+                        quotationBlocks.forEach((block, index) => {
+                            block.setAttribute('data-index', index);
+                            
+                            // 更新上移/下移按钮的禁用状态
+                            const moveUpBtn = block.querySelector('.btn-move-up');
+                            const moveDownBtn = block.querySelector('.btn-move-down');
+                            
+                            if (moveUpBtn) {
+                                moveUpBtn.disabled = index === 0;
+                            }
+                            if (moveDownBtn) {
+                                moveDownBtn.disabled = index === quotations.length - 1;
+                            }
+                        });
+                    }
+                }
+            });
+        }
+
+        // 页面卸载前保存数据
+        window.addEventListener('beforeunload', function(e) {
+            saveQuotations();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+{
+    "markdown.copyFiles.destination": {
+        "**/*": "assets/"
+    },
+    "pasteImage.path": "${currentFileDir}/assets",
+    "pasteImage.basePath": "${currentFileDir}",
+    "pasteImage.forcePathStyle": "relative",
+    "pasteImage.namePrefix": "image-",
+    "pasteImage.dateFormat": "YYYYMMDDHHmmss"
+}

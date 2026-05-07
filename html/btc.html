@@ -1,0 +1,1451 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>合伙炒股分账系统 v2.0</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        /* 全局样式 */
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            padding-bottom: 40px;
+        }
+
+        .container {
+            max-width: 1200px;
+        }
+
+        /* 卡片通用样式 */
+        .card {
+            border: none;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+            margin-bottom: 25px;
+            border-radius: 16px;
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.95);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.18);
+        }
+
+        /* 页面标题 */
+        h3 {
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        h3 .badge {
+            background: rgba(255,255,255,0.25) !important;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.3);
+            font-size: 0.7rem !important;
+            padding: 6px 12px;
+            font-weight: 500;
+        }
+
+        /* 顶部资产大卡片 */
+        .main-stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(102, 126, 234, 0.4);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .main-stat-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: pulse 8s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(-10%, -10%); }
+        }
+
+        .main-val {
+            font-size: 2.8rem;
+            font-weight: 800;
+            text-shadow: 2px 2px 10px rgba(0,0,0,0.2);
+            letter-spacing: 1px;
+        }
+
+        .sub-val {
+            opacity: 0.85;
+            font-size: 0.9rem;
+        }
+
+        /* 个人权益卡片 */
+        .user-card-header {
+            font-weight: 700;
+            font-size: 1.15rem;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%) !important;
+            border-bottom: 3px solid #667eea !important;
+            border-radius: 16px 16px 0 0 !important;
+            padding: 15px 20px !important;
+            color: #2d3748;
+        }
+
+        .stat-label {
+            color: #718096;
+            font-size: 0.8rem;
+            margin-top: 5px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-val {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin-top: 5px;
+        }
+
+        .profit-plus {
+            color: #38a169;
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(56, 161, 105, 0.3);
+        }
+
+        .profit-minus {
+            color: #e53e3e;
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(229, 62, 62, 0.3);
+        }
+
+        /* 按钮样式优化 */
+        .btn-action {
+            height: 100%;
+            min-height: 90px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-weight: 700;
+            font-size: 1rem;
+            border-radius: 12px;
+            border: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-action::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn-action:hover::before {
+            left: 100%;
+        }
+
+        .btn-action:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+        }
+
+        .btn-action:active {
+            transform: translateY(-1px);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
+        }
+
+        .btn-secondary-action {
+            height: 100%;
+            min-height: 45px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-weight: 600;
+            font-size: 0.85rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary-action:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .btn-equal-width {
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+
+        .btn-equal-width:hover {
+            transform: scale(1.05);
+        }
+
+        .grid-cols-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        /* 表格样式优化 */
+        .history-table {
+            font-size: 0.85rem;
+            white-space: nowrap;
+        }
+
+        .history-table th,
+        .history-table td {
+            padding: 12px 8px;
+            vertical-align: middle;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .table-striped tbody tr:nth-of-type(odd) {
+            background-color: rgba(102, 126, 234, 0.05);
+        }
+
+        .table-hover tbody tr:hover {
+            background-color: rgba(102, 126, 234, 0.1);
+            transition: all 0.2s ease;
+        }
+
+        .table thead th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 0.8rem;
+            padding: 12px 8px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        /* 表格单元格宽度优化 */
+        .history-table th:nth-child(1),
+        .history-table td:nth-child(1) {
+            min-width: 100px;
+        }
+
+        .history-table th:nth-child(2),
+        .history-table td:nth-child(2) {
+            min-width: 120px;
+        }
+
+        .history-table th:nth-child(3),
+        .history-table td:nth-child(3) {
+            min-width: 100px;
+        }
+
+        .history-table th:nth-child(4),
+        .history-table td:nth-child(4) {
+            min-width: 110px;
+        }
+
+        .history-table th:nth-child(5),
+        .history-table td:nth-child(5) {
+            min-width: 110px;
+        }
+
+        .history-table th:nth-child(6),
+        .history-table td:nth-child(6) {
+            min-width: 120px;
+        }
+
+        /* 模态框样式 */
+        .modal-content {
+            border-radius: 16px;
+            border: none;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 16px 16px 0 0;
+            border: none;
+            padding: 20px;
+        }
+
+        .modal-title {
+            font-weight: 700;
+        }
+
+        .form-control {
+            border-radius: 8px;
+            border: 2px solid #e2e8f0;
+            padding: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 8px;
+        }
+
+        /* 徽章样式 */
+        .badge {
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+
+        /* 分隔线 */
+        hr {
+            opacity: 0.2;
+        }
+
+        /* 提示框样式 */
+        .alert {
+            border-radius: 10px;
+            border: none;
+        }
+
+        .alert-info {
+            background: linear-gradient(135deg, #bee3f8 0%, #90cdf4 100%);
+            color: #2c5282;
+        }
+
+        .alert-danger {
+            background: linear-gradient(135deg, #feb2b2 0%, #fc8181 100%);
+            color: #742a2a;
+        }
+
+        .alert-warning {
+            background: linear-gradient(135deg, #fbd38d 0%, #f6ad55 100%);
+            color: #744210;
+        }
+
+        /* 响应式优化 */
+        @media (max-width: 768px) {
+            .main-val {
+                font-size: 2rem;
+            }
+
+            .btn-action {
+                min-height: 70px;
+                font-size: 0.9rem;
+            }
+
+            h3 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container py-4">
+    <h3 class="text-center mb-4 fw-bold">📈 合伙炒股分账系统 <span class="badge bg-secondary fs-6">v2.0</span></h3>
+
+    <div class="card main-stat-card text-center p-4">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <span>证券账户总资产 (元)</span>
+        </div>
+        <div class="main-val" id="displayTotalAssets">0.00</div>
+        <div class="mt-2 text-white-50 small">每日收盘后，请务必点击下方“更新市值”以校准数据</div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header user-card-header bg-light border-bottom-0">👤 我的账户详情</div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <div class="stat-label">当前持有权益 (占<span id="mySharePct">0</span>%)</div>
+                            <div class="stat-val text-primary" id="displayMyEquity">0.00</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="stat-label">当前账面盈亏</div>
+                            <div class="stat-val" id="displayMyProfit">0.00</div>
+                        </div>
+                        <div class="col-12"><hr class="my-2"></div>
+                        <div class="col-4">
+                            <div class="stat-label">总投入(本金)</div>
+                            <div class="small text-dark fw-bold" id="displayMyIn">0.00</div>
+                        </div>
+                        <div class="col-4">
+                            <div class="stat-label">总取出(落袋)</div>
+                            <div class="small text-secondary" id="displayMyOut">0.00</div>
+                        </div>
+                        <div class="col-4">
+                            <div class="stat-label">净本金(在投)</div>
+                            <div class="small text-dark fw-bold" id="displayMyNetPrincipal">0.00</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header user-card-header bg-light border-bottom-0">👥 朋友的账户详情</div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <div class="stat-label">当前持有权益 (占<span id="friendSharePct">0</span>%)</div>
+                            <div class="stat-val text-primary" id="displayFriendEquity">0.00</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="stat-label">当前账面盈亏</div>
+                            <div class="stat-val" id="displayFriendProfit">0.00</div>
+                        </div>
+                        <div class="col-12"><hr class="my-2"></div>
+                        <div class="col-4">
+                            <div class="stat-label">总投入(本金)</div>
+                            <div class="small text-dark fw-bold" id="displayFriendIn">0.00</div>
+                        </div>
+                        <div class="col-4">
+                            <div class="stat-label">总取出(落袋)</div>
+                            <div class="small text-secondary" id="displayFriendOut">0.00</div>
+                        </div>
+                        <div class="col-4">
+                            <div class="stat-label">净本金(在投)</div>
+                            <div class="small text-dark fw-bold" id="displayFriendNetPrincipal">0.00</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-2 mb-4">
+        <div class="col-6 col-md-3">
+            <button class="btn btn-primary w-100 btn-action" data-bs-toggle="modal" data-bs-target="#updateMarketValueModal">
+                <span>📊 更新市值</span>
+                <span style="font-size:0.7rem; font-weight:normal; opacity:0.8;">收盘后操作</span>
+            </button>
+        </div>
+        <div class="col-6 col-md-3">
+            <button class="btn btn-success w-100 btn-action" data-bs-toggle="modal" data-bs-target="#depositModal">
+                <span>💰 资金转入</span>
+                <span style="font-size:0.7rem; font-weight:normal; opacity:0.8;">充值/加仓</span>
+            </button>
+        </div>
+        <div class="col-6 col-md-3">
+            <button class="btn btn-danger w-100 btn-action" data-bs-toggle="modal" data-bs-target="#withdrawModal">
+                <span>💸 资金转出</span>
+                <span style="font-size:0.7rem; font-weight:normal; opacity:0.8;">提现/银证转出</span>
+            </button>
+        </div>
+        <div class="col-6 col-md-3">
+            <button class="btn btn-warning w-100 btn-action text-dark" data-bs-toggle="modal" data-bs-target="#transferModal">
+                <span>🤝 内部转让</span>
+                <span style="font-size:0.7rem; font-weight:normal; opacity:0.8;">私下买卖股份</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center">
+            <span>📝 操作流水记录</span>
+            <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-info btn-secondary-action" onclick="exportData()">
+                    <span>📥 导出</span>
+                </button>
+                <button class="btn btn-sm btn-secondary btn-secondary-action" onclick="document.getElementById('importFile').click()">
+                    <span>📤 导入</span>
+                </button>
+                <button class="btn btn-sm btn-outline-warning btn-secondary-action" data-bs-toggle="modal" data-bs-target="#initDataModal">
+                    <span>🔄 初始化</span>
+                </button>
+                <button class="btn btn-sm btn-outline-secondary btn-secondary-action" onclick="undoLastAction()" id="undoBtn" disabled>
+                    <span>↶ 撤销</span>
+                </button>
+                <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importData()">
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover history-table mb-0 text-center align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>时间</th>
+                            <th>类型</th>
+                            <th>金额变动</th>
+                            <th>我的权益</th>
+                            <th>朋友权益</th>
+                            <th>总资产快照</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logsBody">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="updateMarketValueModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">📊 更新今日市值</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info py-2 small">此操作只会重新计算权益占比，不会改变本金统计。</div>
+                <label class="form-label">输入证券账户当前总资产</label>
+                <input type="number" class="form-control" id="inputNewTotalAssets" placeholder="例如: 50000">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary w-100" onclick="actionUpdateMarketValue()">确认更新</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="depositModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">💰 资金转入 (充值)</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">谁充值的？</label>
+                    <div class="d-grid gap-2 grid-cols-2">
+                        <button type="button" class="btn btn-outline-primary btn-equal-width" id="depositWhoMe" onclick="selectDepositWho('me')">
+                            我 (User)
+                        </button>
+                        <button type="button" class="btn btn-outline-primary btn-equal-width" id="depositWhoFriend" onclick="selectDepositWho('friend')">
+                            朋友 (Partner)
+                        </button>
+                    </div>
+                    <input type="hidden" id="depositWho" value="me">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">充值金额 (元)</label>
+                    <input type="number" class="form-control" id="depositAmount">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success w-100" onclick="actionDeposit()">确认充值</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="withdrawModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">💸 资金转出 (提现)</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger py-2 small">资金将从证券账户减少。对应的【总取出】统计会增加。</div>
+                <div class="mb-3">
+                    <label class="form-label">谁提走的？</label>
+                    <div class="d-grid gap-2 grid-cols-2">
+                        <button type="button" class="btn btn-outline-danger btn-equal-width" id="withdrawWhoMe" onclick="selectWithdrawWho('me')">
+                            我 (User)
+                        </button>
+                        <button type="button" class="btn btn-outline-danger btn-equal-width" id="withdrawWhoFriend" onclick="selectWithdrawWho('friend')">
+                            朋友 (Partner)
+                        </button>
+                    </div>
+                    <input type="hidden" id="withdrawWho" value="me">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">提现金额 (元)</label>
+                    <input type="number" class="form-control" id="withdrawAmount">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger w-100" onclick="actionWithdraw()">确认提现</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="transferModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">🤝 内部股份转让</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning py-2 small">
+                    <b>说明：</b> 你们私下转账，证券账户总钱数不变。<br>
+                    <b>统计影响：</b> 买方视为追加本金(投入增加)，卖方视为回本(取出增加)。
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">交易方向</label>
+                    <div class="d-grid gap-2 grid-cols-2">
+                        <button type="button" class="btn btn-outline-warning btn-equal-width" id="transferDirectionBuy" onclick="selectTransferDirection('me_buy_friend')">
+                            我买朋友的份额 (我出钱)
+                        </button>
+                        <button type="button" class="btn btn-outline-warning btn-equal-width" id="transferDirectionSell" onclick="selectTransferDirection('friend_buy_me')">
+                            朋友买我的份额 (他出钱)
+                        </button>
+                    </div>
+                    <input type="hidden" id="transferDirection" value="me_buy_friend">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">交易金额 (私下转账数额)</label>
+                    <input type="number" class="form-control" id="transferAmount" placeholder="0.00">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-warning w-100" onclick="actionTransfer()">确认转让</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 数据初始化确认对话框 -->
+<div class="modal fade" id="initDataModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title">⚠️ 数据初始化确认</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger py-3">
+                    <strong>警告！</strong>
+                    <p class="mt-2 mb-0">确定要初始化所有数据吗？此操作将清除所有现有数据且无法恢复。</p>
+                </div>
+                <div class="mt-3">
+                    <p>初始化将清除以下内容：</p>
+                    <ul class="list-disc ms-4">
+                        <li>所有用户创建的数据记录</li>
+                        <li>系统配置信息和个性化设置</li>
+                        <li>本地缓存和临时文件</li>
+                        <li>所有业务数据</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer d-flex gap-2">
+                <button type="button" class="btn btn-secondary flex-grow-1" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-danger flex-grow-1" onclick="confirmInitData()">确认</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 初始化成功提示对话框 -->
+<div class="modal fade" id="initSuccessModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">✅ 操作成功</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <p>数据已成功初始化，系统已恢复至初始状态。</p>
+                <div class="mt-3">
+                    <button type="button" class="btn btn-success" data-bs-dismiss="modal" onclick="window.location.reload()">刷新页面</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // --- 按钮选择逻辑 ---
+    function selectDepositWho(who) {
+        // 重置所有按钮样式
+        document.getElementById('depositWhoMe').classList.remove('btn-primary');
+        document.getElementById('depositWhoMe').classList.add('btn-outline-primary');
+        document.getElementById('depositWhoFriend').classList.remove('btn-primary');
+        document.getElementById('depositWhoFriend').classList.add('btn-outline-primary');
+        
+        // 设置选中按钮样式
+        if (who === 'me') {
+            document.getElementById('depositWhoMe').classList.remove('btn-outline-primary');
+            document.getElementById('depositWhoMe').classList.add('btn-primary');
+        } else {
+            document.getElementById('depositWhoFriend').classList.remove('btn-outline-primary');
+            document.getElementById('depositWhoFriend').classList.add('btn-primary');
+        }
+        
+        // 更新隐藏输入值
+        document.getElementById('depositWho').value = who;
+    }
+    
+    function selectWithdrawWho(who) {
+        // 重置所有按钮样式
+        document.getElementById('withdrawWhoMe').classList.remove('btn-danger');
+        document.getElementById('withdrawWhoMe').classList.add('btn-outline-danger');
+        document.getElementById('withdrawWhoFriend').classList.remove('btn-danger');
+        document.getElementById('withdrawWhoFriend').classList.add('btn-outline-danger');
+        
+        // 设置选中按钮样式
+        if (who === 'me') {
+            document.getElementById('withdrawWhoMe').classList.remove('btn-outline-danger');
+            document.getElementById('withdrawWhoMe').classList.add('btn-danger');
+        } else {
+            document.getElementById('withdrawWhoFriend').classList.remove('btn-outline-danger');
+            document.getElementById('withdrawWhoFriend').classList.add('btn-danger');
+        }
+        
+        // 更新隐藏输入值
+        document.getElementById('withdrawWho').value = who;
+    }
+    
+    function selectTransferDirection(direction) {
+        // 重置所有按钮样式
+        document.getElementById('transferDirectionBuy').classList.remove('btn-warning');
+        document.getElementById('transferDirectionBuy').classList.add('btn-outline-warning');
+        document.getElementById('transferDirectionSell').classList.remove('btn-warning');
+        document.getElementById('transferDirectionSell').classList.add('btn-outline-warning');
+        
+        // 设置选中按钮样式
+        if (direction === 'me_buy_friend') {
+            document.getElementById('transferDirectionBuy').classList.remove('btn-outline-warning');
+            document.getElementById('transferDirectionBuy').classList.add('btn-warning');
+        } else {
+            document.getElementById('transferDirectionSell').classList.remove('btn-outline-warning');
+            document.getElementById('transferDirectionSell').classList.add('btn-warning');
+        }
+        
+        // 更新隐藏输入值
+        document.getElementById('transferDirection').value = direction;
+    }
+    
+    // --- 数据初始化 ---
+    let appData = {
+        totalAssets: 0,
+        myEquity: 0,
+        friendEquity: 0,
+        // 新增统计字段
+        myStats: { totalIn: 0, totalOut: 0 },
+        friendStats: { totalIn: 0, totalOut: 0 },
+        logs: []
+    };
+
+    // --- 撤销功能：历史记录栈 ---
+    let historyStack = []; // 保存历史状态
+    const MAX_HISTORY = 20; // 最多保存20次历史记录
+
+    // 保存当前状态到历史栈
+    function saveToHistory(actionType) {
+        const snapshot = {
+            data: JSON.parse(JSON.stringify(appData)),
+            actionType: actionType,
+            timestamp: new Date().toISOString()
+        };
+        historyStack.push(snapshot);
+
+        // 限制历史记录数量
+        if (historyStack.length > MAX_HISTORY) {
+            historyStack.shift(); // 删除最旧的记录
+        }
+
+        // 保存历史栈到localStorage
+        try {
+            localStorage.setItem('stock_partner_history', JSON.stringify(historyStack));
+        } catch (e) {
+            console.warn('历史记录保存失败:', e);
+        }
+
+        updateUndoButton();
+    }
+
+    // 更新撤销按钮状态
+    function updateUndoButton() {
+        const undoBtn = document.getElementById('undoBtn');
+        if (historyStack.length > 0) {
+            undoBtn.disabled = false;
+            const lastAction = historyStack[historyStack.length - 1];
+            undoBtn.title = `撤销: ${lastAction.actionType}`;
+        } else {
+            undoBtn.disabled = true;
+            undoBtn.title = '没有可撤销的操作';
+        }
+    }
+
+    // 执行撤销操作
+    function undoLastAction() {
+        if (historyStack.length === 0) {
+            alert('⚠️ 没有可撤销的操作');
+            return;
+        }
+
+        // 弹出最后一个历史记录
+        const lastSnapshot = historyStack.pop();
+
+        try {
+            // 恢复到历史状态
+            appData = JSON.parse(JSON.stringify(lastSnapshot.data));
+
+            // 保存恢复后的数据
+            localStorage.setItem('stock_partner_data_v2', JSON.stringify(appData));
+            localStorage.setItem('stock_partner_history', JSON.stringify(historyStack));
+
+            // 更新UI
+            renderUI();
+            updateUndoButton();
+
+            // 记录撤销日志
+            console.log('↶ 撤销操作成功:', {
+                actionType: lastSnapshot.actionType,
+                timestamp: lastSnapshot.timestamp,
+                remainingHistory: historyStack.length
+            });
+
+            // 显示提示
+            showToast(`✅ 已撤销: ${lastSnapshot.actionType}`);
+
+        } catch (error) {
+            console.error('❌ 撤销操作失败:', error);
+            alert('⚠️ 撤销失败：' + error.message);
+
+            // 如果撤销失败，把历史记录放回去
+            historyStack.push(lastSnapshot);
+            localStorage.setItem('stock_partner_history', JSON.stringify(historyStack));
+        }
+    }
+
+    // 显示临时提示（Toast）
+    function showToast(message) {
+        // 创建提示元素
+        const toast = document.createElement('div');
+        toast.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #28a745;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 9999;
+            font-weight: bold;
+            animation: slideIn 0.3s ease-out;
+        `;
+        toast.textContent = message;
+
+        // 添加动画样式
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(400px); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(400px); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+
+        document.body.appendChild(toast);
+
+        // 3秒后移除
+        setTimeout(() => {
+            toast.style.animation = 'slideOut 0.3s ease-in';
+            setTimeout(() => {
+                document.body.removeChild(toast);
+            }, 300);
+        }, 3000);
+    }
+
+    // 页面加载
+    window.onload = function() {
+        console.log('📄 页面加载开始，尝试从localStorage加载数据...');
+        // 从localStorage加载数据
+        const savedData = localStorage.getItem('stock_partner_data_v2');
+        if (savedData) {
+            try {
+                let loaded = JSON.parse(savedData);
+                // 简单的版本兼容：如果旧数据没有stats字段，加上
+                if (!loaded.myStats) loaded.myStats = { totalIn: 0, totalOut: 0 };
+                if (!loaded.friendStats) loaded.friendStats = { totalIn: 0, totalOut: 0 };
+                appData = loaded;
+                console.log('📄 数据加载成功:', {
+                    totalAssets: appData.totalAssets,
+                    myEquity: appData.myEquity,
+                    friendEquity: appData.friendEquity,
+                    logCount: appData.logs.length
+                });
+            } catch (error) {
+                console.error('数据加载失败:', error);
+                console.log('📄 数据加载失败，使用默认设置');
+                alert('⚠️ 数据加载失败，将使用默认设置');
+            }
+        } else {
+            console.log('📄 首次加载，使用默认数据');
+        }
+
+        // 加载历史记录栈
+        const savedHistory = localStorage.getItem('stock_partner_history');
+        if (savedHistory) {
+            try {
+                historyStack = JSON.parse(savedHistory);
+                console.log('📄 历史记录加载成功，可撤销操作数:', historyStack.length);
+            } catch (error) {
+                console.error('历史记录加载失败:', error);
+                historyStack = [];
+            }
+        }
+
+        renderUI();
+        updateUndoButton();
+        console.log('📄 页面加载完成，UI已渲染');
+    };
+
+    function saveData() {
+        try {
+            // 保存到localStorage
+            localStorage.setItem('stock_partner_data_v2', JSON.stringify(appData));
+            renderUI();
+        } catch (error) {
+            console.error('数据保存失败:', error);
+            alert('⚠️ 数据保存失败，请尝试手动导出');
+            throw error; // 重新抛出错误，以便上层函数处理
+        }
+    }
+
+    // 添加页面卸载前的自动保存和提示
+    window.addEventListener('beforeunload', function(e) {
+        try {
+            localStorage.setItem('stock_partner_data_v2', JSON.stringify(appData));
+        } catch (error) {
+            console.error('关闭前数据保存失败:', error);
+        }
+        
+        // 显示关闭提醒
+        const message = '💡 提醒：建议定期导出数据备份到本地文件！';
+        e.returnValue = message;
+        return message;
+    });
+
+    // --- 界面渲染 ---
+    function renderUI() {
+        // 1. 基础资产显示
+        document.getElementById('displayTotalAssets').innerText = formatMoney(appData.totalAssets);
+        document.getElementById('displayMyEquity').innerText = formatMoney(appData.myEquity);
+        document.getElementById('displayFriendEquity').innerText = formatMoney(appData.friendEquity);
+
+        // 2. 权益百分比计算
+        let totalEq = appData.myEquity + appData.friendEquity;
+        let myPct = totalEq > 0 ? (appData.myEquity / totalEq * 100) : 0;
+        let friendPct = totalEq > 0 ? (appData.friendEquity / totalEq * 100) : 0;
+        
+        document.getElementById('mySharePct').innerText = myPct.toFixed(2);
+        document.getElementById('friendSharePct').innerText = friendPct.toFixed(2);
+
+        // 3. 统计数据渲染 (本金、盈亏)
+        renderUserStats('me', appData.myEquity, appData.myStats);
+        renderUserStats('friend', appData.friendEquity, appData.friendStats);
+
+        // 4. 日志渲染
+        const tbody = document.getElementById('logsBody');
+        tbody.innerHTML = '';
+        appData.logs.slice().reverse().forEach(log => {
+            let color = 'text-dark';
+            if(log.valChange.includes('+')) color = 'text-success fw-bold';
+            if(log.valChange.includes('-')) color = 'text-danger fw-bold';
+            
+            let row = `
+                <tr>
+                    <td><small class="text-muted">${log.time}</small></td>
+                    <td><span class="badge bg-light text-dark border">${log.type}</span></td>
+                    <td class="${color}">${log.valChange}</td>
+                    <td>${formatMoney(log.snapMy)}</td>
+                    <td>${formatMoney(log.snapFriend)}</td>
+                    <td><small>${formatMoney(log.snapTotal)}</small></td>
+                </tr>
+            `;
+            tbody.innerHTML += row;
+        });
+    }
+
+    function renderUserStats(prefix, currentEquity, stats) {
+        let netPrincipal = stats.totalIn - stats.totalOut;
+        let profit = currentEquity - netPrincipal;
+        
+        // ID 前缀转换
+        let p = prefix === 'me' ? 'displayMy' : 'displayFriend';
+
+        document.getElementById(p + 'In').innerText = formatMoney(stats.totalIn);
+        document.getElementById(p + 'Out').innerText = formatMoney(stats.totalOut);
+        document.getElementById(p + 'NetPrincipal').innerText = formatMoney(netPrincipal);
+        
+        let profitEl = document.getElementById(p + 'Profit');
+        profitEl.innerText = (profit >= 0 ? "+" : "") + formatMoney(profit);
+        profitEl.className = "stat-val " + (profit >= 0 ? "profit-plus" : "profit-minus");
+    }
+
+    // --- 业务逻辑 ---
+
+    // 1. 更新市值 (不影响本金统计)
+    function actionUpdateMarketValue() {
+        let newTotal = parseFloat(document.getElementById('inputNewTotalAssets').value);
+        if (isNaN(newTotal)) return alert("请输入数字");
+
+        let oldTotalEquity = appData.myEquity + appData.friendEquity;
+        if (oldTotalEquity === 0 && newTotal > 0) return alert("请先进行【资金转入】初始化本金。");
+
+        // 保存到历史记录（在修改前）
+        saveToHistory("市值更新");
+
+        // 实现事务处理：备份当前状态，确保所有操作要么全部成功要么全部回滚
+        const backupData = JSON.parse(JSON.stringify(appData));
+
+        try {
+            let profitOrLoss = newTotal - oldTotalEquity;
+            let myRatio = oldTotalEquity > 0 ? appData.myEquity / oldTotalEquity : 0;
+            let friendRatio = oldTotalEquity > 0 ? appData.friendEquity / oldTotalEquity : 0;
+
+            appData.myEquity += profitOrLoss * myRatio;
+            appData.friendEquity += profitOrLoss * friendRatio;
+            appData.totalAssets = newTotal;
+
+            addLog("市值更新", (profitOrLoss>=0?"+":"") + formatMoney(profitOrLoss));
+            
+            // 保存数据到localStorage
+            localStorage.setItem('stock_partner_data_v2', JSON.stringify(appData));
+            
+            // 更新UI
+            renderUI();
+            
+            // 记录操作日志
+            console.log('📝 市值更新操作日志:', {
+                operator: 'user',
+                time: new Date().toISOString(),
+                result: 'success',
+                type: 'updateMarketValue',
+                newTotal: newTotal,
+                profitOrLoss: profitOrLoss,
+                description: '市值更新成功'
+            });
+            
+            finishAction('updateMarketValueModal', 'inputNewTotalAssets');
+            
+        } catch (error) {
+            // 回滚到备份状态
+            appData = backupData;
+            localStorage.setItem('stock_partner_data_v2', JSON.stringify(appData));
+            renderUI();
+            
+            // 记录错误日志
+            console.error('❌ 市值更新失败:', error);
+            console.log('📝 市值更新操作日志:', {
+                operator: 'user',
+                time: new Date().toISOString(),
+                result: 'failed',
+                type: 'updateMarketValue',
+                newTotal: newTotal,
+                error: error.message,
+                description: '市值更新失败，已回滚到操作前状态'
+            });
+            
+            alert('⚠️ 市值更新失败：' + error.message);
+        }
+    }
+
+    // 2. 资金转入 (增加本金统计)
+    function actionDeposit() {
+        let who = document.getElementById('depositWho').value;
+        let amount = parseFloat(document.getElementById('depositAmount').value);
+        if (isNaN(amount) || amount <= 0) return alert("请输入有效金额");
+
+        // 保存到历史记录（在修改前）
+        saveToHistory(who === 'me' ? "我充值" : "朋友充值");
+
+        // 实现事务处理：备份当前状态，确保所有操作要么全部成功要么全部回滚
+        const backupData = JSON.parse(JSON.stringify(appData));
+        
+        try {
+            // 执行数据更新
+            appData.totalAssets += amount;
+            
+            if (who === 'me') {
+                appData.myEquity += amount;
+                appData.myStats.totalIn += amount; // 统计增加
+                addLog("我充值", "+" + formatMoney(amount));
+            } else {
+                appData.friendEquity += amount;
+                appData.friendStats.totalIn += amount; // 统计增加
+                addLog("朋友充值", "+" + formatMoney(amount));
+            }
+            
+            // 保存数据到localStorage
+            localStorage.setItem('stock_partner_data_v2', JSON.stringify(appData));
+            
+            // 更新UI
+            renderUI();
+            
+            // 记录操作日志
+            console.log('📝 资金转入操作日志:', {
+                operator: 'user',
+                time: new Date().toISOString(),
+                result: 'success',
+                type: 'deposit',
+                who: who,
+                amount: amount,
+                description: '资金转入成功'
+            });
+            
+            // 关闭模态框并清空输入
+            finishAction('depositModal', 'depositAmount');
+            
+        } catch (error) {
+            // 回滚到备份状态
+            appData = backupData;
+            localStorage.setItem('stock_partner_data_v2', JSON.stringify(appData));
+            renderUI();
+            
+            // 记录错误日志
+            console.error('❌ 资金转入失败:', error);
+            console.log('📝 资金转入操作日志:', {
+                operator: 'user',
+                time: new Date().toISOString(),
+                result: 'failed',
+                type: 'deposit',
+                who: who,
+                amount: amount,
+                error: error.message,
+                description: '资金转入失败，已回滚到操作前状态'
+            });
+            
+            alert('⚠️ 资金转入失败：' + error.message);
+        }
+    }
+
+    // 3. 资金转出 (增加取出统计)
+    function actionWithdraw() {
+        let who = document.getElementById('withdrawWho').value;
+        let amount = parseFloat(document.getElementById('withdrawAmount').value);
+        if (isNaN(amount) || amount <= 0) return alert("请输入有效金额");
+        if (amount > appData.totalAssets) return alert("余额不足");
+
+        // 保存到历史记录（在修改前）
+        saveToHistory(who === 'me' ? "我提现" : "朋友提现");
+
+        // 事务备份
+        const backupData = JSON.parse(JSON.stringify(appData));
+        
+        try {
+            appData.totalAssets -= amount;
+
+            if (who === 'me') {
+                appData.myEquity -= amount;
+                appData.myStats.totalOut += amount; // 统计增加
+                addLog("我提现", "-" + formatMoney(amount));
+            } else {
+                appData.friendEquity -= amount;
+                appData.friendStats.totalOut += amount; // 统计增加
+                addLog("朋友提现", "-" + formatMoney(amount));
+            }
+            
+            // 保存数据
+            localStorage.setItem('stock_partner_data_v2', JSON.stringify(appData));
+            renderUI();
+            
+            // 记录日志
+            console.log('📝 资金转出操作日志:', {
+                operator: 'user',
+                time: new Date().toISOString(),
+                result: 'success',
+                type: 'withdraw',
+                who: who,
+                amount: amount,
+                description: '资金转出成功'
+            });
+            
+            finishAction('withdrawModal', 'withdrawAmount');
+            
+        } catch (error) {
+            // 回滚操作
+            appData = backupData;
+            localStorage.setItem('stock_partner_data_v2', JSON.stringify(appData));
+            renderUI();
+            
+            // 记录错误
+            console.error('❌ 资金转出失败:', error);
+            console.log('📝 资金转出操作日志:', {
+                operator: 'user',
+                time: new Date().toISOString(),
+                result: 'failed',
+                type: 'withdraw',
+                who: who,
+                amount: amount,
+                error: error.message,
+                description: '资金转出失败，已回滚'
+            });
+            
+            alert('⚠️ 资金转出失败：' + error.message);
+        }
+    }
+
+    // 4. 内部转让 (买方加投入，卖方加取出)
+    function actionTransfer() {
+        let direction = document.getElementById('transferDirection').value;
+        let amount = parseFloat(document.getElementById('transferAmount').value);
+        if (isNaN(amount) || amount <= 0) return alert("请输入有效金额");
+
+        // 保存到历史记录（在修改前）
+        saveToHistory(direction === 'me_buy_friend' ? "内部买断(我买入)" : "内部买断(朋友买入)");
+
+        // 实现事务处理：备份当前状态，确保所有操作要么全部成功要么全部回滚
+        const backupData = JSON.parse(JSON.stringify(appData));
+        
+        try {
+            if (direction === 'me_buy_friend') {
+                if (appData.friendEquity < amount) return alert("朋友权益不足");
+                // 资金移动
+                appData.myEquity += amount;
+                appData.friendEquity -= amount;
+                // 统计移动：我花了私房钱(投入增加)，朋友拿到了私房钱(落袋为安)
+                appData.myStats.totalIn += amount;
+                appData.friendStats.totalOut += amount;
+                addLog("内部买断(我买入)", "转移 " + formatMoney(amount));
+            } else {
+                if (appData.myEquity < amount) return alert("你的权益不足");
+                appData.friendEquity += amount;
+                appData.myEquity -= amount;
+                // 统计移动
+                appData.friendStats.totalIn += amount;
+                appData.myStats.totalOut += amount;
+                addLog("内部买断(朋友买入)", "转移 " + formatMoney(amount));
+            }
+            
+            // 保存数据到localStorage
+            localStorage.setItem('stock_partner_data_v2', JSON.stringify(appData));
+            
+            // 更新UI
+            renderUI();
+            
+            // 记录操作日志
+            console.log('📝 内部转让操作日志:', {
+                operator: 'user',
+                time: new Date().toISOString(),
+                result: 'success',
+                type: 'transfer',
+                direction: direction,
+                amount: amount,
+                description: '内部转让成功'
+            });
+            
+            // 关闭模态框并清空输入
+            finishAction('transferModal', 'transferAmount');
+            
+        } catch (error) {
+            // 回滚到备份状态
+            appData = backupData;
+            localStorage.setItem('stock_partner_data_v2', JSON.stringify(appData));
+            renderUI();
+            
+            // 记录错误日志
+            console.error('❌ 内部转让失败:', error);
+            console.log('📝 内部转让操作日志:', {
+                operator: 'user',
+                time: new Date().toISOString(),
+                result: 'failed',
+                type: 'transfer',
+                direction: direction,
+                amount: amount,
+                error: error.message,
+                description: '内部转让失败，已回滚到操作前状态'
+            });
+            
+            alert('⚠️ 内部转让失败：' + error.message);
+        }
+    }
+
+    // 工具函数
+    function addLog(type, valChange) {
+        let now = new Date();
+        let timeStr = `${now.getMonth()+1}/${now.getDate()} ${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;
+        appData.logs.push({
+            time: timeStr,
+            type: type,
+            valChange: valChange,
+            snapTotal: appData.totalAssets,
+            snapMy: appData.myEquity,
+            snapFriend: appData.friendEquity
+        });
+    }
+
+    function finishAction(modalId, inputId) {
+        // 关闭模态框并清空输入
+        // 注意：数据保存和UI渲染已经在各个业务函数中完成，避免重复操作
+        bootstrap.Modal.getInstance(document.getElementById(modalId)).hide();
+        document.getElementById(inputId).value = '';
+    }
+
+    function formatMoney(num) {
+        return num.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    // --- 数据导入导出功能 ---
+    function exportData() {
+        const dataStr = JSON.stringify(appData, null, 2);
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+        
+        // 获取当前日期并格式化为YYYYMMDD
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const dateStr = `${year}${month}${day}`;
+        
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(dataBlob);
+        link.download = `stock_partner_data_${dateStr}.json`;
+        link.click();
+        
+        URL.revokeObjectURL(link.href);
+    }
+
+    function importData() {
+        const fileInput = document.getElementById('importFile');
+        if (!fileInput.files || !fileInput.files[0]) return;
+        
+        const file = fileInput.files[0];
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+            try {
+                const importedData = JSON.parse(e.target.result);
+                
+                // 验证数据结构
+                if (validateImportedData(importedData)) {
+                    // 应用版本兼容
+                    if (!importedData.myStats) importedData.myStats = { totalIn: 0, totalOut: 0 };
+                    if (!importedData.friendStats) importedData.friendStats = { totalIn: 0, totalOut: 0 };
+
+                    appData = importedData;
+                    saveData();
+
+                    // 清空历史记录栈（导入新数据后重新开始）
+                    historyStack = [];
+                    localStorage.setItem('stock_partner_history', JSON.stringify(historyStack));
+                    updateUndoButton();
+
+                    alert('✅ 数据导入成功！');
+                } else {
+                    alert('❌ 导入的数据格式不正确！');
+                }
+            } catch (error) {
+                alert('❌ 数据解析错误：' + error.message);
+            }
+            
+            // 清空文件输入
+            fileInput.value = '';
+        };
+        
+        reader.readAsText(file);
+    }
+
+    function validateImportedData(data) {
+        return data && 
+               typeof data.totalAssets === 'number' &&
+               typeof data.myEquity === 'number' &&
+               typeof data.friendEquity === 'number' &&
+               Array.isArray(data.logs);
+    }
+
+    // --- 数据初始化功能 ---
+    function confirmInitData() {
+        try {
+            // 1. 备份当前数据（用于可能的恢复）
+            const backupData = JSON.parse(JSON.stringify(appData));
+
+            // 2. 重置appData到初始状态
+            const initialData = {
+                totalAssets: 0,
+                myEquity: 0,
+                friendEquity: 0,
+                myStats: { totalIn: 0, totalOut: 0 },
+                friendStats: { totalIn: 0, totalOut: 0 },
+                logs: []
+            };
+
+            // 3. 更新localStorage和内存数据
+            localStorage.setItem('stock_partner_data_v2', JSON.stringify(initialData));
+            appData = initialData;
+
+            // 4. 清空历史记录栈
+            historyStack = [];
+            localStorage.setItem('stock_partner_history', JSON.stringify(historyStack));
+
+            // 5. 更新UI显示
+            renderUI();
+            updateUndoButton();
+
+            // 5. 记录初始化操作日志
+            console.log('📝 数据初始化操作日志:', {
+                operator: 'user',
+                time: new Date().toISOString(),
+                result: 'success',
+                description: '数据已成功初始化，系统恢复至初始状态'
+            });
+            
+            // 6. 关闭确认对话框
+            bootstrap.Modal.getInstance(document.getElementById('initDataModal')).hide();
+            
+            // 7. 显示成功提示对话框
+            const successModal = new bootstrap.Modal(document.getElementById('initSuccessModal'));
+            successModal.show();
+            
+        } catch (error) {
+            console.error('❌ 数据初始化失败:', error);
+            alert('⚠️ 数据初始化失败：' + error.message);
+            
+            // 记录错误日志
+            console.log('📝 数据初始化操作日志:', {
+                operator: 'user',
+                time: new Date().toISOString(),
+                result: 'failed',
+                error: error.message,
+                description: '数据初始化过程中发生错误'
+            });
+        }
+    }
+</script>
+</body>
+</html>

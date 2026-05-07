@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>合伙炒股分账系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .card { border: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; border-radius: 12px; }
+        .stat-card { text-align: center; padding: 20px; }
+        .stat-value { font-size: 1.5rem; font-weight: bold; color: #2c3e50; }
+        .stat-label { color: #7f8c8d; font-size: 0.9rem; }
+        .share-percent { font-size: 0.8rem; color: #27ae60; font-weight: bold; }
+        .btn-action { width: 100%; margin-bottom: 10px; }
+        .history-table { font-size: 0.9rem; }
+        .negative { color: #e74c3c; }
+        .positive { color: #27ae60; }
+        .modal-header { background-color: #e9ecef; }
+    </style>
+</head>
+<body>
+
+<div class="container py-4">
+    <h2 class="text-center mb-4">📈 合伙炒股分账记账本</h2>
+
+    <div class="card">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <span class="h5 mb-0">当前资产概览</span>
+            <button class="btn btn-sm btn-light text-primary" onclick="resetData()">⚠️ 重置所有数据</button>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4 border-end">
+                    <div class="stat-card">
+                        <div class="stat-label">证券账户总市值 (元)</div>
+                        <div class="stat-value text-primary" id="displayTotalAssets">0.00</div>
+                        <div class="text-muted small mt-2">每日收盘后请点击下方“更新市值”</div>
+                    </div>
+                </div>
+                <div class="col-md-4 border-end">
+                    <div class="stat-card">
+                        <div class="stat-label">我的权益 (我占的钱)</div>
+                        <div class="stat-value" id="displayMyEquity">0.00</div>
+                        <div class="share-percent" id="displayMyPercent">持股: 0%</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="stat-card">
+                        <div class="stat-label">朋友权益 (朋友占的钱)</div>
+                        <div class="stat-value" id="displayFriendEquity">0.00</div>
+                        <div class="share-percent" id="displayFriendPercent">持股: 0%</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <button class="btn btn-primary btn-action py-3" data-bs-toggle="modal" data-bs-target="#updateMarketValueModal">
+                📊 1. 更新今日市值
+            </button>
+        </div>
+        <div class="col-md-3">
+            <button class="btn btn-success btn-action py-3" data-bs-toggle="modal" data-bs-target="#depositModal">
+                💰 2. 资金转入 (充值)
+            </button>
+        </div>
+        <div class="col-md-3">
+            <button class="btn btn-danger btn-action py-3" data-bs-toggle="modal" data-bs-target="#withdrawModal">
+                💸 3. 资金转出 (提现)
+            </button>
+        </div>
+        <div class="col-md-3">
+            <button class="btn btn-warning btn-action py-3 text-dark" data-bs-toggle="modal" data-bs-target="#transferModal">
+                🤝 4. 内部股份转让 (买断)
+            </button>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            操作记录
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover history-table mb-0 text-center">
+                    <thead>
+                        <tr>
+                            <th>时间</th>
+                            <th>操作类型</th>
+                            <th>变动金额/数值</th>
+                            <th>当时总市值</th>
+                            <th>我的权益</th>
+                            <th>朋友权益</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logsBody">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="updateMarketValueModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">更新今日市值</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>请打开你的炒股软件，输入当前账户显示的<b>总资产</b>。</p>
+                <div class="mb-3">
+                    <label class="form-label">当前总资产 (元)</label>
+                    <input type="number" class="form-control" id="inputNewTotalAssets" placeholder="例如: 50000">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="actionUpdateMarketValue()">确认更新</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="depositModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">资金转入 (充值)</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted">注意：请先完成“更新市值”操作，再进行充值，以保证分账公平。</p>
+                <div class="mb-3">
+                    <label class="form-label">是谁充值的？</label>
+                    <select class="form-select" id="depositWho">
+                        <option value="me">我 (User)</option>
+                        <option value="friend">朋友 (Partner)</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">充值金额 (元)</label>
+                    <input type="number" class="form-control" id="depositAmount" placeholder="0.00">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-success" onclick="actionDeposit()">确认充值</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="withdrawModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">资金转出 (提现)</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted">资金将从证券账户转出到银行卡。</p>
+                <div class="mb-3">
+                    <label class="form-label">是谁提现？</label>
+                    <select class="form-select" id="withdrawWho">
+                        <option value="me">我 (User)</option>
+                        <option value="friend">朋友 (Partner)</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">提现金额 (元)</label>
+                    <input type="number" class="form-control" id="withdrawAmount" placeholder="0.00">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-danger" onclick="actionWithdraw()">确认提现</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="transferModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">内部股份转让 (买断)</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <strong>场景说明：</strong><br>
+                    朋友急用钱，你私下转账给他，买下他在股票账户里的份额。<br>
+                    <b>股票账户的总金额不会变</b>，但是“我的权益”会增加，“朋友权益”会减少。
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">交易方向</label>
+                    <select class="form-select" id="transferDirection">
+                        <option value="me_buy_friend">我买朋友的份额 (我的权益增加)</option>
+                        <option value="friend_buy_me">朋友买我的份额 (朋友权益增加)</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">买断金额 (元)</label>
+                    <input type="number" class="form-control" id="transferAmount" placeholder="你私下给了他多少钱">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-warning" onclick="actionTransfer()">确认转让</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // --- 数据逻辑 ---
+    
+    // 初始化数据结构
+    let appData = {
+        totalAssets: 0,
+        myEquity: 0,
+        friendEquity: 0,
+        logs: []
+    };
+
+    // 页面加载时读取数据
+    window.onload = function() {
+        const savedData = localStorage.getItem('stock_partner_data_v1');
+        if (savedData) {
+            appData = JSON.parse(savedData);
+        }
+        renderUI();
+    };
+
+    // 保存数据
+    function saveData() {
+        localStorage.setItem('stock_partner_data_v1', JSON.stringify(appData));
+        renderUI();
+    }
+
+    // 重置数据
+    function resetData() {
+        if(confirm("确定要删除所有记录并重置吗？此操作不可恢复。")) {
+            appData = { totalAssets: 0, myEquity: 0, friendEquity: 0, logs: [] };
+            saveData();
+            location.reload();
+        }
+    }
+
+    // 渲染界面
+    function renderUI() {
+        // 1. 显示数值
+        document.getElementById('displayTotalAssets').innerText = formatMoney(appData.totalAssets);
+        document.getElementById('displayMyEquity').innerText = formatMoney(appData.myEquity);
+        document.getElementById('displayFriendEquity').innerText = formatMoney(appData.friendEquity);
+
+        // 2. 计算百分比
+        let totalEq = appData.myEquity + appData.friendEquity;
+        let myPer = 0, friendPer = 0;
+        if (totalEq > 0) {
+            myPer = (appData.myEquity / totalEq) * 100;
+            friendPer = (appData.friendEquity / totalEq) * 100;
+        } else if (appData.totalAssets > 0) {
+             // 极端情况：如果权益归零但有资产(通常不会发生除非逻辑错误)，暂时按50/50显示
+        }
+        
+        document.getElementById('displayMyPercent').innerText = `持股: ${myPer.toFixed(2)}%`;
+        document.getElementById('displayFriendPercent').innerText = `持股: ${friendPer.toFixed(2)}%`;
+
+        // 3. 渲染日志
+        const tbody = document.getElementById('logsBody');
+        tbody.innerHTML = '';
+        // 倒序显示，最新的在上面
+        appData.logs.slice().reverse().forEach(log => {
+            let colorClass = log.valChange && log.valChange.toString().startsWith('-') ? 'negative' : 'positive';
+            let row = `
+                <tr>
+                    <td>${log.time}</td>
+                    <td><span class="badge bg-secondary">${log.type}</span></td>
+                    <td class="${colorClass}">${log.valChange || '-'}</td>
+                    <td>${formatMoney(log.snapTotal)}</td>
+                    <td>${formatMoney(log.snapMy)}</td>
+                    <td>${formatMoney(log.snapFriend)}</td>
+                </tr>
+            `;
+            tbody.innerHTML += row;
+        });
+    }
+
+    // --- 核心算法区 ---
+
+    // 1. 更新市值 (Mark to Market)
+    // 逻辑：计算新的总值和旧的权益之和的差额（盈亏），按之前的比例分配盈亏
+    function actionUpdateMarketValue() {
+        let newTotal = parseFloat(document.getElementById('inputNewTotalAssets').value);
+        if (isNaN(newTotal)) return alert("请输入有效数字");
+
+        let oldTotalEquity = appData.myEquity + appData.friendEquity;
+        
+        // 如果是第一次使用（权益为0），则直接把资产设为总资产（假设是初始入金未记录，或者强制校准）
+        // 但为了严谨，如果权益为0，通常建议通过“充值”来初始化。
+        // 这里处理：如果权益为0，但输入了市值，系统会不知道怎么分。
+        if (oldTotalEquity === 0) {
+            if (newTotal > 0) {
+                alert("当前系统内双方权益为0。请先使用【资金转入】功能分别输入你和朋友的本金，然后再更新市值。");
+                return;
+            }
+        }
+
+        let profitOrLoss = newTotal - oldTotalEquity;
+        
+        // 计算旧的比例
+        let myRatio = appData.myEquity / oldTotalEquity;
+        let friendRatio = appData.friendEquity / oldTotalEquity;
+
+        // 分配盈亏
+        appData.myEquity += profitOrLoss * myRatio;
+        appData.friendEquity += profitOrLoss * friendRatio;
+        appData.totalAssets = newTotal;
+
+        addLog("更新市值", (profitOrLoss >=0 ? "+":"") + formatMoney(profitOrLoss) + " (盈亏)");
+        saveData();
+        bootstrap.Modal.getInstance(document.getElementById('updateMarketValueModal')).hide();
+        document.getElementById('inputNewTotalAssets').value = '';
+    }
+
+    // 2. 资金转入 (Deposit)
+    function actionDeposit() {
+        let who = document.getElementById('depositWho').value;
+        let amount = parseFloat(document.getElementById('depositAmount').value);
+        if (isNaN(amount) || amount <= 0) return alert("请输入有效金额");
+
+        appData.totalAssets += amount;
+        if (who === 'me') {
+            appData.myEquity += amount;
+            addLog("我充值", "+" + formatMoney(amount));
+        } else {
+            appData.friendEquity += amount;
+            addLog("朋友充值", "+" + formatMoney(amount));
+        }
+        
+        saveData();
+        bootstrap.Modal.getInstance(document.getElementById('depositModal')).hide();
+        document.getElementById('depositAmount').value = '';
+    }
+
+    // 3. 资金转出 (Withdraw)
+    // 逻辑：提现会同时减少总资产和该人的权益
+    function actionWithdraw() {
+        let who = document.getElementById('withdrawWho').value;
+        let amount = parseFloat(document.getElementById('withdrawAmount').value);
+        if (isNaN(amount) || amount <= 0) return alert("请输入有效金额");
+
+        if (amount > appData.totalAssets) return alert("提现金额不能大于总资产");
+
+        appData.totalAssets -= amount;
+        if (who === 'me') {
+            appData.myEquity -= amount;
+            addLog("我提现", "-" + formatMoney(amount));
+        } else {
+            appData.friendEquity -= amount;
+            addLog("朋友提现", "-" + formatMoney(amount));
+        }
+
+        saveData();
+        bootstrap.Modal.getInstance(document.getElementById('withdrawModal')).hide();
+        document.getElementById('withdrawAmount').value = '';
+    }
+
+    // 4. 内部转让 (Buyout)
+    // 逻辑：总资产不变，一个人的权益加，一个人减
+    function actionTransfer() {
+        let direction = document.getElementById('transferDirection').value;
+        let amount = parseFloat(document.getElementById('transferAmount').value);
+        if (isNaN(amount) || amount <= 0) return alert("请输入有效金额");
+
+        if (direction === 'me_buy_friend') {
+            if (appData.friendEquity < amount) return alert("朋友的剩余权益不足以转让这么多");
+            appData.myEquity += amount;
+            appData.friendEquity -= amount;
+            addLog("我买入朋友股份", "内部转移 " + formatMoney(amount));
+        } else {
+            if (appData.myEquity < amount) return alert("你的剩余权益不足以转让这么多");
+            appData.friendEquity += amount;
+            appData.myEquity -= amount;
+            addLog("朋友买入我股份", "内部转移 " + formatMoney(amount));
+        }
+
+        // 总资产 appData.totalAssets 不变
+        saveData();
+        bootstrap.Modal.getInstance(document.getElementById('transferModal')).hide();
+        document.getElementById('transferAmount').value = '';
+    }
+
+    // 工具函数
+    function addLog(type, valChange) {
+        let now = new Date();
+        let timeStr = `${now.getMonth()+1}-${now.getDate()} ${now.getHours()}:${now.getMinutes()}`;
+        appData.logs.push({
+            time: timeStr,
+            type: type,
+            valChange: valChange,
+            snapTotal: appData.totalAssets,
+            snapMy: appData.myEquity,
+            snapFriend: appData.friendEquity
+        });
+    }
+
+    function formatMoney(num) {
+        return num.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+</script>
+
+</body>
+</html>
