@@ -4,7 +4,19 @@
       "Bash(git init *)",
       "Bash(git remote *)",
       "Bash(git config *)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git branch *)",
+      "Bash(git push *)",
+      "Bash(gh auth *)",
+      "Bash(curl -s --connect-timeout 5 https://github.com)",
+      "Bash(ssh-keygen *)",
+      "Bash(ssh *)",
+      "Bash(git pull *)",
+      "Bash(ssh-add *)",
+      "Bash(cp ~/.ssh/id_ed25519 ~/.ssh/id_ed25519.bak)",
+      "Bash(mv ~/.ssh/id_ed25519 ~/.ssh/my_key)",
+      "Bash(mv ~/.ssh/my_key ~/.ssh/id_ed25519)"
     ]
   }
 }
